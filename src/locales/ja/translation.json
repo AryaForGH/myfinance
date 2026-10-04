@@ -62,7 +62,7 @@
   "auth.verifyEmail": "ログインする前にメールを確認して認証してください。",
   "auth.emailVerified": "メールアドレスを確認しました。MyFinanceをご利用いただけます。",
   "auth.verificationLinkInvalid": "確認リンクが無効か期限切れです。メールアドレスを入力して新しいリンクをリクエストしてください。",
-  "auth.verificationSent": "新しい確認リンクを送信しました。受信トレイをご確認ください。",
+  "auth.verificationSent": "再送信リクエストを受け付けました。アカウントが未確認の場合、メールが送信されます。届かない場合は迷惑メールやプロモーションをご確認ください。",
   "auth.resendVerification": "確認メールを再送信",
   "auth.passwordUpdated": "パスワードを更新しました。",
   "auth.passwordMin": "新しいパスワードは8文字以上で入力してください。",

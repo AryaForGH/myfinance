@@ -62,7 +62,7 @@
   "auth.verifyEmail": "Periksa kotak masuk untuk memverifikasi email sebelum masuk.",
   "auth.emailVerified": "Email berhasil diverifikasi. Anda dapat melanjutkan menggunakan MyFinance.",
   "auth.verificationLinkInvalid": "Tautan verifikasi tidak valid atau sudah kedaluwarsa. Masukkan email untuk meminta tautan baru.",
-  "auth.verificationSent": "Tautan verifikasi baru telah dikirim. Periksa kotak masuk Anda.",
+  "auth.verificationSent": "Permintaan kirim ulang diterima. Jika akun masih menunggu verifikasi, email akan dikirim. Periksa spam atau promosi jika belum masuk.",
   "auth.resendVerification": "Kirim ulang email verifikasi",
   "auth.passwordUpdated": "Kata sandi berhasil diperbarui.",
   "auth.passwordMin": "Kata sandi baru harus terdiri dari minimal 8 karakter.",

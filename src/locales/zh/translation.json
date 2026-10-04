@@ -62,7 +62,7 @@
   "auth.verifyEmail": "登录前请检查收件箱并验证邮箱。",
   "auth.emailVerified": "邮箱已验证，您现在可以继续使用 MyFinance。",
   "auth.verificationLinkInvalid": "验证链接无效或已过期。请输入邮箱以重新获取链接。",
-  "auth.verificationSent": "新的验证链接已发送，请检查收件箱。",
+  "auth.verificationSent": "已接受重新发送请求。如果账户仍未验证，系统将发送邮件。若未收到，请检查垃圾邮件或推广邮件。",
   "auth.resendVerification": "重新发送验证邮件",
   "auth.passwordUpdated": "密码已更新。",
   "auth.passwordMin": "新密码至少需要 8 个字符。",

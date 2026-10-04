@@ -62,7 +62,7 @@
   "auth.verifyEmail": "Semak peti masuk untuk mengesahkan e-mel sebelum log masuk.",
   "auth.emailVerified": "E-mel anda telah disahkan. Anda boleh meneruskan penggunaan MyFinance.",
   "auth.verificationLinkInvalid": "Pautan pengesahan tidak sah atau telah tamat tempoh. Masukkan e-mel untuk meminta pautan baharu.",
-  "auth.verificationSent": "Pautan pengesahan baharu telah dihantar. Semak peti masuk anda.",
+  "auth.verificationSent": "Permintaan hantar semula diterima. Jika akaun masih menunggu pengesahan, e-mel akan dihantar. Semak spam atau promosi jika belum diterima.",
   "auth.resendVerification": "Hantar semula e-mel pengesahan",
   "auth.passwordUpdated": "Kata laluan anda telah dikemas kini.",
   "auth.passwordMin": "Kata laluan baharu mesti mempunyai sekurang-kurangnya 8 aksara.",

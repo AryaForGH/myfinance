@@ -62,7 +62,7 @@
   "auth.verifyEmail": "Check your inbox to verify your email before signing in.",
   "auth.emailVerified": "Your email is verified. You can continue using MyFinance.",
   "auth.verificationLinkInvalid": "This verification link is invalid or expired. Enter your email to request a new link.",
-  "auth.verificationSent": "A new verification link was sent. Check your inbox.",
+  "auth.verificationSent": "The resend request was accepted. If the account still needs verification, an email will be sent. Check spam or promotions if it does not arrive.",
   "auth.resendVerification": "Resend verification email",
   "auth.passwordUpdated": "Your password has been updated.",
   "auth.passwordMin": "Your new password must contain at least 8 characters.",
