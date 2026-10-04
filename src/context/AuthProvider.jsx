@@ -2,6 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { AuthContext } from './AuthContext.js'
 
+function authRedirectUrl(parameter, value) {
+  const redirectUrl = new URL('/', window.location.origin)
+  redirectUrl.searchParams.set(parameter, value)
+  return redirectUrl.toString()
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -43,6 +49,11 @@ export function AuthProvider({ children }) {
     return data
   }, [])
 
+  const resetPassword = useCallback((email) => runAuth(() => supabase.auth.resetPasswordForEmail(
+    email,
+    { redirectTo: authRedirectUrl('reset-password', '1') },
+  )), [runAuth])
+
   const value = useMemo(() => ({
     session,
     user: session?.user ?? null,
@@ -55,15 +66,18 @@ export function AuthProvider({ children }) {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: authRedirectUrl('auth', 'verified'),
       },
     })),
-    signOut: () => runAuth(() => supabase.auth.signOut()),
-    resetPassword: (email) => runAuth(() => supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/?reset-password=1`,
+    resendVerification: (email) => runAuth(() => supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: authRedirectUrl('auth', 'verified') },
     })),
+    signOut: () => runAuth(() => supabase.auth.signOut()),
+    resetPassword,
     updatePassword: (password) => runAuth(() => supabase.auth.updateUser({ password })),
-  }), [session, loading, authError, runAuth])
+  }), [session, loading, authError, runAuth, resetPassword])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

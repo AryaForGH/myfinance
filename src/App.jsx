@@ -9,6 +9,8 @@ import ProfileSettings from './components/ProfileSettings.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import DashboardSkeleton from './components/DashboardSkeleton.jsx'
 import LoadingScreen from './components/LoadingScreen.jsx'
+import GoalBudgetPages from './components/GoalBudgetPages.jsx'
+import TransactionsAccountsPages from './components/TransactionsAccountsPages.jsx'
 import { useToast } from './context/useToast.js'
 import './App.css'
 
@@ -26,12 +28,35 @@ const PAGE_IDS = Object.freeze({
   accounts: 'Accounts',
   budgets: 'Budgets',
   goals: 'Goals',
+  goal: 'GoalDetail',
+  budget: 'BudgetDetail',
   settings: 'Settings',
   about: 'About',
 })
 
 function pageFromLocation() {
-  return PAGE_IDS[window.location.hash.slice(1).toLowerCase()] || 'Overview'
+  const hash = window.location.hash.slice(1)
+  if (/^goal\/[^/]+$/i.test(hash)) return 'GoalDetail'
+  if (/^budget\/[^/]+$/i.test(hash)) return 'BudgetDetail'
+  if (/^transaction\/(transaction|transfer)\/[^/]+$/i.test(hash)) return 'TransactionDetail'
+  if (/^account\/[^/]+$/i.test(hash)) return 'AccountDetail'
+  return PAGE_IDS[hash.toLowerCase()] || 'Overview'
+}
+
+function detailIdFromLocation() {
+  const hash = window.location.hash.slice(1)
+  const match = hash.match(/^(?:goal|budget|account)\/([^/]+)$/i)
+    || hash.match(/^transaction\/(?:transaction|transfer)\/([^/]+)$/i)
+  if (!match) return null
+  try {
+    return decodeURIComponent(match[1])
+  } catch {
+    return null
+  }
+}
+
+function transactionKindFromLocation() {
+  return window.location.hash.slice(1).match(/^transaction\/(transaction|transfer)\//i)?.[1]?.toLowerCase() || null
 }
 
 function Icon({ name, size = 20, strokeWidth = 1.8 }) {
@@ -226,19 +251,43 @@ function AuthScreen() {
   const { t } = useI18n()
   const { notify } = useToast()
   const {
+    user,
+    loading: authLoading,
     signIn,
     signUp,
+    resendVerification,
     resetPassword,
     updatePassword,
     authError,
     clearAuthError,
   } = useAuth()
-  const params = new URLSearchParams(window.location.search)
-  const initialMode = params.get('reset-password') === '1' ? 'reset' : 'login'
+  const [callbackState] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return {
+      verificationFailed: params.has('error') || params.has('error_code'),
+      verified: params.get('auth') === 'verified',
+    }
+  })
+  const verificationFailed = callbackState.verificationFailed
+  const initialMode = new URLSearchParams(window.location.search).get('reset-password') === '1' ? 'reset' : 'login'
   const [mode, setMode] = useState(initialMode)
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
-  const [formError, setFormError] = useState('')
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState(callbackState.verified && !verificationFailed ? t('auth.emailVerified') : '')
+  const [formError, setFormError] = useState(verificationFailed ? t('auth.verificationLinkInvalid') : '')
+  const canResendVerification = verificationFailed || /email.*not confirmed/i.test(`${formError} ${authError}`)
+
+  useEffect(() => {
+    if (authLoading) return
+    if (callbackState.verified && user) return
+    const url = new URL(window.location.href)
+    if (!url.searchParams.has('auth') && !url.searchParams.has('error') && !url.searchParams.has('error_code')) return
+    url.searchParams.delete('auth')
+    url.searchParams.delete('error')
+    url.searchParams.delete('error_code')
+    url.searchParams.delete('error_description')
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [authLoading, callbackState.verified, user])
 
   async function submit(event) {
     event.preventDefault()
@@ -247,12 +296,12 @@ function AuthScreen() {
     setMessage('')
     clearAuthError()
     const form = new FormData(event.currentTarget)
-    const email = String(form.get('email') || '').trim()
+    const submittedEmail = String(form.get('email') || '').trim()
     const password = String(form.get('password') || '')
     const fullName = String(form.get('fullName') || '').trim()
     const confirmation = String(form.get('confirmPassword') || '')
 
-    if (mode !== 'reset' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (mode !== 'reset' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(submittedEmail)) {
       setFormError(t('auth.validEmail'))
       return
     }
@@ -263,7 +312,7 @@ function AuthScreen() {
     if (mode === 'forgot') {
       setBusy(true)
       try {
-        await resetPassword(email)
+        await resetPassword(submittedEmail)
         setMessage(t('auth.resetSent'))
         notify('success', t('auth.resetSent'))
       } catch (error) {
@@ -314,17 +363,37 @@ function AuthScreen() {
     setBusy(true)
     try {
       if (mode === 'register') {
-        const result = await signUp(fullName, email, password)
+        const result = await signUp(fullName, submittedEmail, password)
         if (!result.session) {
           setMessage(t('auth.verifyEmail'))
           notify('success', t('toast.accountCreated'))
         }
       } else {
-        await signIn(email, password)
+        await signIn(submittedEmail, password)
         notify('success', t('toast.signedIn'))
       }
     } catch (error) {
       setFormError(error.message)
+      notify('error', error.message || t('auth.authFailed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function resendVerificationEmail() {
+    if (busy) return
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setFormError(t('auth.validEmail'))
+      return
+    }
+    setBusy(true)
+    setFormError('')
+    try {
+      await resendVerification(email.trim())
+      setMessage(t('auth.verificationSent'))
+      notify('success', t('auth.verificationSent'))
+    } catch (error) {
+      setFormError(error.message || t('auth.authFailed'))
       notify('error', error.message || t('auth.authFailed'))
     } finally {
       setBusy(false)
@@ -352,12 +421,13 @@ function AuthScreen() {
         </p>
         <form className="auth-form" onSubmit={submit}>
           {mode === 'register' && <label>{t('common.fullName')}<input name="fullName" autoComplete="name" maxLength="120" required /></label>}
-          {mode !== 'reset' && <label>{t('common.email')}<input name="email" type="email" autoComplete="email" required /></label>}
+          {mode !== 'reset' && <label>{t('common.email')}<input name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>}
           {mode !== 'forgot' && <label>{mode === 'reset' ? t('auth.newPassword') : t('common.password')}<input name="password" type="password" minLength="8" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required /></label>}
           {(mode === 'register' || mode === 'reset') && <label>{t('common.confirmPassword')}<input name="confirmPassword" type="password" minLength="8" autoComplete="new-password" required /></label>}
           {mode === 'login' && <button className="auth-inline-link" type="button" onClick={() => { setMode('forgot'); setMessage(''); setFormError('') }}>{t('auth.forgotLink')}</button>}
           {(formError || authError) && <p className="form-message form-error" role="alert">{formError || authError}</p>}
           {message && <p className="form-message form-success" role="status">{message}</p>}
+          {canResendVerification && mode === 'login' && <button className="auth-inline-link" type="button" onClick={resendVerificationEmail} disabled={busy}>{busy ? t('auth.pleaseWait') : t('auth.resendVerification')}</button>}
           <button className="primary-button auth-submit" type="submit" disabled={busy}>
             {busy && <span className="inline-spinner" aria-hidden="true" />}
             {busy ? t('auth.pleaseWait') : mode === 'register' ? t('auth.create') : mode === 'forgot' ? t('auth.sendReset') : mode === 'reset' ? t('common.updatePassword') : t('auth.signIn')}
@@ -383,6 +453,8 @@ function App() {
   const { t } = useI18n()
   const { notify } = useToast()
   const [activePage, setActivePage] = useState(pageFromLocation)
+  const [detailId, setDetailId] = useState(detailIdFromLocation)
+  const [detailKind, setDetailKind] = useState(transactionKindFromLocation)
   const skipHistoryPush = useRef(false)
   const [search, setSearch] = useState('')
   const searchInputRef = useRef(null)
@@ -393,6 +465,7 @@ function App() {
   const [dashboardState, setDashboardState] = useState(null)
   const [dashboardLoadingUserId, setDashboardLoadingUserId] = useState(null)
   const [dashboardErrorState, setDashboardErrorState] = useState(null)
+  const [dashboardRevision, setDashboardRevision] = useState(0)
   const [modalType, setModalType] = useState('')
   const [modalOwnerId, setModalOwnerId] = useState(null)
   const [editingTransaction, setEditingTransaction] = useState(null)
@@ -415,24 +488,47 @@ function App() {
     }
   })
   const initializing = authLoading || Boolean(user && preferencesLoading)
+  const verificationHandled = useRef(false)
+
+  useEffect(() => {
+    if (!user?.email_confirmed_at || verificationHandled.current) return
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('auth') !== 'verified') return
+    verificationHandled.current = true
+    notify('success', t('auth.emailVerified'))
+    url.searchParams.delete('auth')
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [user?.email_confirmed_at, notify, t])
 
   useEffect(() => {
     if (skipHistoryPush.current) {
       skipHistoryPush.current = false
       return
     }
-    const pageId = Object.keys(PAGE_IDS).find((key) => PAGE_IDS[key] === activePage)
+    const pageId = activePage === 'GoalDetail' && detailId
+      ? `goal/${encodeURIComponent(detailId)}`
+      : activePage === 'BudgetDetail' && detailId
+        ? `budget/${encodeURIComponent(detailId)}`
+        : activePage === 'AccountDetail' && detailId
+          ? `account/${encodeURIComponent(detailId)}`
+          : activePage === 'TransactionDetail' && detailId
+            ? `transaction/${detailKind || 'transaction'}/${encodeURIComponent(detailId)}`
+        : Object.keys(PAGE_IDS).find((key) => PAGE_IDS[key] === activePage)
     if (pageId && window.location.hash !== `#${pageId}`) {
-      window.history.pushState({ page: activePage }, '', `${window.location.pathname}${window.location.search}#${pageId}`)
+      window.history.pushState({ page: activePage, detailId }, '', `${window.location.pathname}${window.location.search}#${pageId}`)
     }
-  }, [activePage])
+  }, [activePage, detailId, detailKind])
 
   useEffect(() => {
     function restorePageFromHistory() {
       const page = pageFromLocation()
-      if (page === activePage) return
+      const id = detailIdFromLocation()
+      const kind = transactionKindFromLocation()
+      if (page === activePage && id === detailId && kind === detailKind) return
       skipHistoryPush.current = true
       setActivePage(page)
+      setDetailId(id)
+      setDetailKind(kind)
     }
     window.addEventListener('popstate', restorePageFromHistory)
     window.addEventListener('hashchange', restorePageFromHistory)
@@ -440,7 +536,13 @@ function App() {
       window.removeEventListener('popstate', restorePageFromHistory)
       window.removeEventListener('hashchange', restorePageFromHistory)
     }
-  }, [activePage])
+  }, [activePage, detailId, detailKind])
+
+  function navigatePage(page, id = null, kind = null) {
+    setDetailId(id)
+    setDetailKind(kind)
+    setActivePage(page)
+  }
 
   useEffect(() => {
     if (!user) return undefined
@@ -453,7 +555,10 @@ function App() {
         return financeService.getDashboard()
       })
       .then((result) => {
-        if (active && result) setDashboardState({ ...result, ownerId: user.id })
+        if (active && result) {
+          setDashboardState({ ...result, ownerId: user.id })
+          setDashboardRevision((revision) => revision + 1)
+        }
       })
       .catch((error) => {
         if (active) setDashboardErrorState({ ownerId: user.id, message: error.message || 'Your financial data could not be loaded.' })
@@ -509,6 +614,7 @@ function App() {
     setDashboardLoadingUserId(user.id)
     try {
       setDashboardState({ ...(await financeService.getDashboard()), ownerId: user.id })
+      setDashboardRevision((revision) => revision + 1)
     } catch (error) {
       setDashboardErrorState({ ownerId: user.id, message: error.message || 'Your financial data could not be refreshed.' })
     } finally {
@@ -594,6 +700,7 @@ function App() {
       } else if (modalType === 'goal') {
         const goalInput = {
           name: values.name,
+          description: values.description,
           currency: editingGoal?.currency || currency,
           targetAmount: values.targetAmount,
           savedAmount: values.savedAmount,
@@ -649,6 +756,7 @@ function App() {
       onConfirm: async () => {
         if (isTransfer) await financeService.deleteTransfer(user.id, transaction.id)
         else await financeService.deleteTransaction(user.id, transaction.id)
+        if (activePage === 'TransactionDetail') navigatePage('Transactions')
         setConfirmation(null)
         notify('success', t('toast.deleted'))
         await refreshDashboard()
@@ -665,6 +773,9 @@ function App() {
         if (type === 'budget') await financeService.deleteBudget(user.id, record.id)
         if (type === 'goal') await financeService.deleteGoal(user.id, record.id)
         if (type === 'category') await financeService.deleteCategory(user.id, record.id)
+        if (type === 'goal') navigatePage('Goals')
+        if (type === 'budget') navigatePage('Budgets')
+        if (type === 'account' && activePage === 'AccountDetail') navigatePage('Accounts')
         setConfirmation(null)
         notify('success', t('toast.deleted'))
         await refreshDashboard()
@@ -741,12 +852,12 @@ function App() {
         <nav className="primary-nav" aria-label={t('nav.menu')}>
           {navigation.map((item) => (
             <button
-              className={`nav-item${activePage === item.label ? ' active' : ''}`}
+              className={`nav-item${activePage === item.label || (activePage === 'GoalDetail' && item.key === 'goals') || (activePage === 'BudgetDetail' && item.key === 'budgets') || (activePage === 'TransactionDetail' && item.key === 'transactions') || (activePage === 'AccountDetail' && item.key === 'accounts') ? ' active' : ''}`}
               key={item.label}
               type="button"
               aria-current={activePage === item.label ? 'page' : undefined}
               onClick={() => {
-                setActivePage(item.label)
+                navigatePage(item.label)
                 setMobileMenuOpen(false)
                 setProfileOpen(false)
               }}
@@ -798,7 +909,7 @@ function App() {
       <main className="main-content">
         <header className="topbar">
           <div className="mobile-brand"><button className="icon-button mobile-menu-button" type="button" aria-label={t('dashboard.openMenu')} onClick={() => setMobileMenuOpen(true)}><span className="menu-lines" /></button><Brand compact /></div>
-          <div className="breadcrumb"><span>{t('nav.workspace')}</span><span className="breadcrumb-slash">/</span><strong>{activePage === 'Settings' ? t('nav.profileSettings') : t(`nav.${activePage.toLowerCase()}`)}</strong></div>
+          <div className="breadcrumb"><span>{t('nav.workspace')}</span><span className="breadcrumb-slash">/</span><strong>{activePage === 'Settings' ? t('nav.profileSettings') : activePage === 'GoalDetail' ? t('goalBudget.goalDetails') : activePage === 'BudgetDetail' ? t('goalBudget.budgetDetails') : t(`nav.${activePage.toLowerCase()}`)}</strong></div>
           <div className="topbar-actions">
             <form className="search-box" role="search" onSubmit={submitSearch}>
               <button className="search-submit" type="submit" aria-label={t('dashboard.submitSearch')}>
@@ -866,8 +977,31 @@ function App() {
           </div>
         </header>
 
-        <div className="page-content page-transition" key={activePage}>
-          {activePage === 'Settings' ? <ProfileSettings onSignOut={handleSignOut} /> : activePage === 'About' ? (
+        <div className="page-content page-transition" key={`${activePage}-${detailId || ''}`}>
+          {activePage === 'Settings' ? <ProfileSettings onSignOut={handleSignOut} /> : ['Goals', 'Budgets', 'GoalDetail', 'BudgetDetail'].includes(activePage) ? (
+            <GoalBudgetPages
+              page={activePage}
+              detailId={detailId}
+              onNavigate={navigatePage}
+              onOpenModal={openModal}
+              onDelete={deleteRecord}
+              onRefresh={refreshDashboard}
+              refreshVersion={dashboardRevision}
+            />
+          ) : ['Transactions', 'Accounts', 'TransactionDetail', 'AccountDetail'].includes(activePage) ? (
+            <TransactionsAccountsPages
+              page={activePage}
+              detailId={detailId}
+              detailKind={detailKind}
+              onNavigate={navigatePage}
+              onOpenModal={openModal}
+              onDeleteTransaction={deleteTransaction}
+              onDeleteRecord={deleteRecord}
+              onToggleArchive={toggleAccountArchive}
+              search={search}
+              refreshVersion={dashboardRevision}
+            />
+          ) : activePage === 'About' ? (
             <section className="about-page surface-card" aria-labelledby="about-title">
               <p className="eyebrow"><span className="eyebrow-line" /> MYFINANCE</p>
               <h1 id="about-title">{t('about.title')}</h1>
@@ -953,7 +1087,7 @@ function App() {
             <article className="surface-card transactions-card">
               <div className="section-heading transactions-heading">
                 <div><h2>{t('dashboard.recentActivity')}</h2><p>{t('dashboard.activitySubtitle')}</p></div>
-                <button className="text-link" type="button" onClick={() => setActivePage('Transactions')}>{t('dashboard.viewAll')} <Icon name="arrowRight" size={15} /></button>
+                <button className="text-link" type="button" onClick={() => navigatePage('Transactions')}>{t('dashboard.viewAll')} <Icon name="arrowRight" size={15} /></button>
               </div>
               <div className="transaction-table">
                 <div className="table-header"><span>{t('dashboard.name')}</span><span>{t('dashboard.category')}</span><span>{t('dashboard.date')}</span><span>{t('dashboard.amount')}</span><span /></div>
@@ -964,7 +1098,7 @@ function App() {
                   const amountLabel = `${isIncome ? '+' : isTransfer ? '' : '−'}${formatCurrency(transaction.amount, transaction.account_currency || currency)}`
                   return (
                   <div className="transaction-row" key={`${transaction.transaction_type}-${transaction.id}`}>
-                    <div className="transaction-name"><span className={`transaction-icon ${isIncome ? 'blue' : isTransfer ? 'lavender' : 'mint'}`}><Icon name={icon} size={17} /></span><strong title={transaction.description}>{transaction.description}</strong></div>
+                    <button className="transaction-name transaction-detail-link" type="button" onClick={() => navigatePage('TransactionDetail', transaction.id, isTransfer ? 'transfer' : 'transaction')}><span className={`transaction-icon ${isIncome ? 'blue' : isTransfer ? 'lavender' : 'mint'}`}><Icon name={icon} size={17} /></span><strong title={transaction.description}>{transaction.description}</strong></button>
                     <span className="transaction-category">{isTransfer ? t('form.to', { name: transaction.to_account_name }) : transaction.category_name || t('form.uncategorized')}</span>
                     <span className="transaction-date">{formatTransactionDate(transaction.occurred_at)}</span>
                     <strong className={`transaction-amount${isIncome ? ' is-income' : ''}`}>{amountLabel}</strong>
@@ -985,7 +1119,7 @@ function App() {
                   const progress = Math.min(100, Number(goal.saved_amount) / Number(goal.target_amount) * 100)
                   return <div className="goal-item" key={goal.id}>
                     <div className="goal-icon travel-goal"><Icon name="target" size={18} /></div>
-                    <div className="goal-details"><div className="goal-title"><strong>{goal.name}</strong><span>{Math.round(progress)}%</span></div><div className="goal-track"><span className="travel-progress" style={{ width: `${progress}%` }} /></div><small>{formatCurrency(goal.saved_amount, goal.currency || currency)} <span> / {formatCurrency(goal.target_amount, goal.currency || currency)}</span></small></div>
+                    <div className="goal-details"><div className="goal-title"><button className="goal-summary-link" type="button" onClick={() => navigatePage('GoalDetail', goal.id)}>{goal.name}</button><span>{Math.round(progress)}%</span></div><div className="goal-track"><span className="travel-progress" style={{ width: `${progress}%` }} /></div><small>{formatCurrency(goal.saved_amount, goal.currency || currency)} <span> / {formatCurrency(goal.target_amount, goal.currency || currency)}</span></small></div>
                     <div className="item-actions"><button className="icon-button row-more" type="button" aria-label={`Edit goal ${goal.name}`} onClick={() => openModal('goal', goal)}><Icon name="edit" size={15} /></button><button className="icon-button row-more" type="button" aria-label={`Delete goal ${goal.name}`} onClick={() => deleteRecord('goal', goal)}><Icon name="trash" size={15} /></button></div>
                   </div>
                 })}
@@ -993,7 +1127,7 @@ function App() {
                   const progress = Math.min(100, Number(budget.spent) / Number(budget.amount) * 100)
                   return <div className="goal-item" key={budget.id}>
                     <div className="goal-icon dining-goal"><Icon name="basket" size={18} /></div>
-                    <div className="goal-details"><div className="goal-title"><strong>{budget.category_name} · {t('nav.budgets')}</strong><span>{Math.round(progress)}%</span></div><div className="goal-track"><span className="dining-progress" style={{ width: `${progress}%` }} /></div><small>{formatCurrency(budget.spent, budget.currency || currency)} <span> / {formatCurrency(budget.amount, budget.currency || currency)}</span></small></div>
+                    <div className="goal-details"><div className="goal-title"><button className="goal-summary-link" type="button" onClick={() => navigatePage('BudgetDetail', budget.id)}>{budget.category_name} · {t('nav.budgets')}</button><span>{Math.round(progress)}%</span></div><div className="goal-track"><span className="dining-progress" style={{ width: `${progress}%` }} /></div><small>{formatCurrency(budget.spent, budget.currency || currency)} <span> / {formatCurrency(budget.amount, budget.currency || currency)}</span></small></div>
                     <div className="item-actions"><button className="icon-button row-more" type="button" aria-label={`Edit ${budget.category_name} budget`} onClick={() => openModal('budget', budget)}><Icon name="edit" size={15} /></button><button className="icon-button row-more" type="button" aria-label={`Delete ${budget.category_name} budget`} onClick={() => deleteRecord('budget', budget)}><Icon name="trash" size={15} /></button></div>
                   </div>
                 })}
@@ -1008,17 +1142,9 @@ function App() {
           {dashboard && activePage === 'Accounts' && <section className="surface-card accounts-card">
             <div className="section-heading"><div><h2>{t('dashboard.yourAccounts')}</h2><p>{t('dashboard.accountBalances')}</p></div><button className="primary-button" type="button" onClick={() => openModal('account')}><Icon name="plus" size={16} /> {t('form.addAccount')}</button></div>
             {accounts.length ? <div className="accounts-list">{accounts.map((account) => <div className="account-row" key={account.id}>
-              <span className="goal-icon travel-goal"><Icon name="wallet" size={18} /></span><span className="account-name"><strong>{account.name}</strong><small>{t(`form.${account.account_type}`)}{account.is_archived ? ` · ${t('dashboard.archived')}` : ''} · {account.currency}</small></span><strong>{formatCurrency(account.balance, account.currency)}</strong>
+              <button className="account-name account-detail-link" type="button" onClick={() => navigatePage('AccountDetail', account.id)}><span className="goal-icon travel-goal"><Icon name="wallet" size={18} /></span><span><strong>{account.name}</strong><small>{t(`form.${account.account_type}`)}{account.is_archived ? ` · ${t('dashboard.archived')}` : ''} · {account.currency}</small></span></button><strong>{formatCurrency(account.balance, account.currency)}</strong>
               <div className="item-actions"><button className="icon-button row-more" type="button" aria-label={t('form.editRecord', { name: account.name })} onClick={() => openModal('account', account)}><Icon name="edit" size={15} /></button><button className="icon-button row-more" type="button" disabled={saving} aria-label={t(account.is_archived ? 'form.unarchiveAccount' : 'form.archiveAccount', { name: account.name })} onClick={() => toggleAccountArchive(account)}><Icon name={account.is_archived ? 'wallet' : 'close'} size={15} /></button><button className="icon-button row-more" type="button" disabled={saving} aria-label={t('form.deleteRecord', { name: account.name })} onClick={() => deleteRecord('account', account)}><Icon name="trash" size={15} /></button></div>
             </div>)}</div> : <p className="empty-inline">{t('dashboard.accountEmpty')}</p>}
-          </section>}
-          {dashboard && activePage === 'Budgets' && <section className="surface-card accounts-card">
-            <div className="section-heading"><div><h2>{t('nav.budgets')}</h2><p>{t('dashboard.budgetTitle')}</p></div><button className="primary-button" type="button" onClick={() => openModal('budget')}><Icon name="plus" size={16} /> {t('dashboard.addBudget')}</button></div>
-            {budgets.length ? budgets.map((budget) => <div className="goal-item" key={budget.id}><div className="goal-icon dining-goal"><Icon name="basket" size={18} /></div><div className="goal-details"><div className="goal-title"><strong>{budget.category_name}</strong><span>{formatCurrency(budget.spent, budget.currency || currency)} / {formatCurrency(budget.amount, budget.currency || currency)}</span></div><div className="goal-track"><span className="dining-progress" style={{ width: `${Math.min(100, Number(budget.spent) / Number(budget.amount) * 100)}%` }} /></div></div><div className="item-actions"><button className="icon-button row-more" type="button" aria-label={t('form.editRecord', { name: budget.category_name })} onClick={() => openModal('budget', budget)}><Icon name="edit" size={15} /></button><button className="icon-button row-more" type="button" aria-label={t('form.deleteRecord', { name: budget.category_name })} onClick={() => deleteRecord('budget', budget)}><Icon name="trash" size={15} /></button></div></div>) : <p className="empty-inline">{t('dashboard.budgetEmpty')}</p>}
-          </section>}
-          {dashboard && activePage === 'Goals' && <section className="surface-card accounts-card">
-            <div className="section-heading"><div><h2>{t('dashboard.financialGoals')}</h2><p>{t('dashboard.goalTitle')}</p></div><button className="primary-button" type="button" onClick={() => openModal('goal')}><Icon name="plus" size={16} /> {t('dashboard.createGoal')}</button></div>
-            {goals.length ? goals.map((goal) => <div className="goal-item" key={goal.id}><div className="goal-icon travel-goal"><Icon name="target" size={18} /></div><div className="goal-details"><div className="goal-title"><strong>{goal.name}</strong><span>{Math.round(Number(goal.saved_amount) / Number(goal.target_amount) * 100)}%</span></div><div className="goal-track"><span className="travel-progress" style={{ width: `${Math.min(100, Number(goal.saved_amount) / Number(goal.target_amount) * 100)}%` }} /></div><small>{formatCurrency(goal.saved_amount, goal.currency || currency)} <span> / {formatCurrency(goal.target_amount, goal.currency || currency)}</span></small></div><div className="item-actions"><button className="icon-button row-more" type="button" aria-label={t('form.editRecord', { name: goal.name })} onClick={() => openModal('goal', goal)}><Icon name="edit" size={15} /></button><button className="icon-button row-more" type="button" aria-label={t('form.deleteRecord', { name: goal.name })} onClick={() => deleteRecord('goal', goal)}><Icon name="trash" size={15} /></button></div></div>) : <p className="empty-inline">{t('dashboard.goalEmpty')}</p>}
           </section>}
           <footer className="page-footer"><span>MyFinance</span></footer>
           </>}
@@ -1069,8 +1195,9 @@ function App() {
             </>}
             {modalType === 'goal' && <>
               <label>{t('form.goalName')}<input name="name" maxLength="100" defaultValue={editingGoal?.name || ''} required /></label>
+              <label>{t('goalBudget.description')}<textarea name="description" maxLength="1000" defaultValue={editingGoal?.description || ''} rows="3" /></label>
               <label>{t('form.targetAmount')} ({editingGoal?.currency || currency})<input name="targetAmount" type="number" min="0.01" step="0.01" defaultValue={editingGoal?.target_amount || ''} required /></label>
-              <label>{t('form.savedAmount')} ({editingGoal?.currency || currency})<input name="savedAmount" type="number" min="0" step="0.01" defaultValue={editingGoal?.saved_amount || '0'} required /></label>
+              {!editingGoal && <label>{t('form.savedAmount')} ({currency})<input name="savedAmount" type="number" min="0" step="0.01" defaultValue="0" required /></label>}
               <label>{t('form.targetDate')}<input name="targetDate" type="date" defaultValue={editingGoal?.target_date || ''} /></label>
             </>}
             {modalType === 'budget' && <>
