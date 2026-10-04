@@ -1,0 +1,255 @@
+.settings-page {
+  display: grid;
+  gap: 17px;
+}
+
+.settings-intro h1 {
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.6vw, 32px);
+  letter-spacing: -1px;
+}
+
+.settings-intro > p:last-child {
+  margin-bottom: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(170px, 220px) minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.settings-subnav {
+  position: sticky;
+  top: 94px;
+  display: grid;
+  gap: 5px;
+  padding: 8px;
+}
+
+.settings-subnav button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.settings-subnav button:hover,
+.settings-subnav button.active {
+  color: var(--nav-active-text);
+  background: var(--nav-active-bg);
+}
+
+.settings-section-content {
+  min-width: 0;
+}
+
+.settings-card {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.settings-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-card-heading h2 {
+  margin: 0 0 5px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.settings-card-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.settings-active-badge {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--nav-active-text);
+  background: var(--nav-active-bg);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.settings-form,
+.settings-field {
+  display: grid;
+  gap: 11px;
+}
+
+.settings-form label,
+.settings-field {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.settings-form input,
+.settings-field input,
+.settings-field select {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  font: inherit;
+  font-size: 12px;
+}
+
+.settings-form input[readonly] {
+  opacity: 0.78;
+}
+
+.settings-form small {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.settings-form .primary-button {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.settings-current {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.settings-current strong {
+  color: var(--text-primary);
+}
+
+.settings-warning {
+  margin: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--gold-line);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  background: var(--gold-soft);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.currency-picker {
+  position: relative;
+}
+
+.currency-options {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  z-index: 60;
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--popover-bg);
+  box-shadow: var(--shadow-popover);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.currency-options button {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 37px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+}
+
+.currency-options button:hover,
+.currency-options button.selected {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.currency-options button strong {
+  color: var(--text-primary);
+}
+
+.currency-options button small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.currency-options > p {
+  margin: 0;
+  padding: 11px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.account-settings-card {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 700px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-subnav {
+    position: static;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 6px;
+  }
+
+  .settings-subnav button {
+    flex: 0 0 auto;
+    min-height: 37px;
+    padding: 0 10px;
+  }
+
+  .settings-card {
+    padding: 16px;
+  }
+
+  .account-settings-card {
+    grid-column: auto;
+  }
+}

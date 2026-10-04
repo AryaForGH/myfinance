@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750&display=swap');
+
+:root {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-weight: 400;
+
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Manrope', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --radius-lg: 19px;
+  --radius-xl: 23px;
+  --shadow-soft: 0 8px 26px rgba(27, 48, 78, 0.055), 0 1px 2px rgba(27, 48, 78, 0.04);
+  --shadow-popover: 0 16px 45px rgba(20, 35, 57, 0.16), 0 2px 7px rgba(20, 35, 57, 0.08);
+}
+
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --page-bg: #f3f5f8;
+  --ambient-blue: rgba(172, 199, 232, 0.19);
+  --ambient-gold: rgba(231, 210, 169, 0.12);
+  --glass-surface: rgba(255, 255, 255, 0.79);
+  --glass-surface-solid: #fff;
+  --glass-highlight: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  --surface-raised: rgba(244, 247, 251, 0.8);
+  --surface-hover: rgba(226, 233, 243, 0.72);
+  --popover-bg: rgba(255, 255, 255, 0.96);
+  --text-primary: #18263b;
+  --text-secondary: #69778b;
+  --text-muted: #95a0af;
+  --line: rgba(50, 71, 102, 0.08);
+  --line-strong: rgba(50, 71, 102, 0.16);
+  --brand-mark: #345b8d;
+  --brand-soft: rgba(73, 112, 166, 0.1);
+  --nav-active-text: #29496f;
+  --nav-active-bg: rgba(225, 234, 246, 0.82);
+  --active-border: rgba(67, 105, 157, 0.08);
+  --gold: #b39458;
+  --gold-soft: rgba(190, 155, 91, 0.13);
+  --gold-line: rgba(191, 158, 98, 0.21);
+  --gold-glow: rgba(218, 193, 142, 0.35);
+  --upgrade-bg: rgba(244, 239, 228, 0.76);
+  --green: #338269;
+  --green-soft: rgba(63, 151, 121, 0.12);
+  --orange: #c77a50;
+  --orange-soft: rgba(201, 126, 81, 0.12);
+  --blue-soft: rgba(86, 128, 183, 0.12);
+  --mint-soft: rgba(84, 153, 124, 0.13);
+  --peach-soft: rgba(196, 133, 95, 0.13);
+  --lavender-soft: rgba(132, 111, 177, 0.12);
+  --rose-soft: rgba(184, 105, 129, 0.12);
+  --chart-income: #789ac1;
+  --chart-income-highlight: #aac2dd;
+  --chart-expense: #d8c499;
+  --chart-grid: rgba(44, 66, 94, 0.1);
+  --donut-track: #edf0f4;
+  --donut-home: #49688e;
+  --donut-life: #a4b6ca;
+  --donut-food: #d5bd89;
+  --donut-other: #d8dee7;
+  --progress-track: #edf0f3;
+  --focus-border: rgba(67, 105, 157, 0.42);
+  --focus-ring: rgba(67, 105, 157, 0.13);
+  --button-start: #365b89;
+  --button-end: #263f63;
+  --button-border: rgba(28, 50, 80, 0.18);
+  --button-shadow: rgba(46, 75, 116, 0.2);
+  --balance-start: #233955;
+  --balance-end: #354e70;
+  --balance-border: rgba(255, 255, 255, 0.16);
+  --balance-shadow: rgba(32, 53, 82, 0.16);
+  --error-text: #a54f48;
+  --error-bg: rgba(193, 96, 83, 0.09);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page-bg: #101722;
+  --ambient-blue: rgba(52, 86, 131, 0.2);
+  --ambient-gold: rgba(133, 106, 61, 0.08);
+  --glass-surface: rgba(27, 38, 54, 0.8);
+  --glass-surface-solid: #1b2636;
+  --glass-highlight: rgba(255, 255, 255, 0.055);
+  --glass-border: rgba(219, 231, 247, 0.09);
+  --surface-raised: rgba(14, 23, 35, 0.53);
+  --surface-hover: rgba(111, 137, 173, 0.14);
+  --popover-bg: rgba(27, 38, 54, 0.97);
+  --text-primary: #eef3fa;
+  --text-secondary: #b0bdcf;
+  --text-muted: #8290a3;
+  --line: rgba(207, 221, 240, 0.09);
+  --line-strong: rgba(207, 221, 240, 0.17);
+  --brand-mark: #9bb9e0;
+  --brand-soft: rgba(120, 158, 207, 0.14);
+  --nav-active-text: #e2edfc;
+  --nav-active-bg: rgba(95, 129, 173, 0.19);
+  --active-border: rgba(165, 193, 228, 0.1);
+  --gold: #cdb579;
+  --gold-soft: rgba(205, 181, 121, 0.14);
+  --gold-line: rgba(205, 181, 121, 0.17);
+  --gold-glow: rgba(172, 142, 80, 0.16);
+  --upgrade-bg: rgba(84, 72, 48, 0.2);
+  --green: #82c9ae;
+  --green-soft: rgba(85, 173, 138, 0.15);
+  --orange: #dfa17e;
+  --orange-soft: rgba(200, 126, 81, 0.15);
+  --blue-soft: rgba(116, 152, 198, 0.16);
+  --mint-soft: rgba(84, 153, 124, 0.15);
+  --peach-soft: rgba(196, 133, 95, 0.16);
+  --lavender-soft: rgba(132, 111, 177, 0.17);
+  --rose-soft: rgba(184, 105, 129, 0.16);
+  --chart-income: #88a9d0;
+  --chart-income-highlight: #c0d3ea;
+  --chart-expense: #bda877;
+  --chart-grid: rgba(207, 221, 240, 0.1);
+  --donut-track: rgba(211, 225, 243, 0.08);
+  --donut-home: #809fc5;
+  --donut-life: #627990;
+  --donut-food: #c5ad78;
+  --donut-other: #485567;
+  --progress-track: rgba(211, 225, 243, 0.1);
+  --focus-border: rgba(155, 185, 224, 0.55);
+  --focus-ring: rgba(155, 185, 224, 0.15);
+  --button-start: #6b8fbe;
+  --button-end: #486993;
+  --button-border: rgba(214, 229, 249, 0.14);
+  --button-shadow: rgba(37, 66, 105, 0.38);
+  --balance-start: #1d3049;
+  --balance-end: #2d4464;
+  --balance-border: rgba(207, 221, 240, 0.12);
+  --balance-shadow: rgba(0, 0, 0, 0.18);
+  --error-text: #f0a59b;
+  --error-bg: rgba(192, 92, 78, 0.13);
+  --shadow-soft: 0 9px 28px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.14);
+  --shadow-popover: 0 18px 45px rgba(0, 0, 0, 0.4), 0 2px 7px rgba(0, 0, 0, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--page-bg);
+  scroll-behavior: smooth;
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--text-primary);
+  background: var(--page-bg);
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+body,
+button,
+input,
+select {
+  font-family: var(--font-body);
+}
+
+button,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--focus-border);
+  outline-offset: 2px;
+}
+
+::selection {
+  color: var(--text-primary);
+  background: var(--brand-soft);
+}
+
+#root {
+  min-height: 100vh;
+}
