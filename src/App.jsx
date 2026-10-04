@@ -273,9 +273,12 @@ function AuthScreen() {
   const [mode, setMode] = useState(initialMode)
   const [busy, setBusy] = useState(false)
   const [email, setEmail] = useState('')
+  const [verificationPending, setVerificationPending] = useState(false)
   const [message, setMessage] = useState(callbackState.verified && !verificationFailed ? t('auth.emailVerified') : '')
   const [formError, setFormError] = useState(verificationFailed ? t('auth.verificationLinkInvalid') : '')
-  const canResendVerification = verificationFailed || /email.*not confirmed/i.test(`${formError} ${authError}`)
+  const canResendVerification = verificationPending
+    || verificationFailed
+    || /email.*not confirmed/i.test(`${formError} ${authError}`)
 
   useEffect(() => {
     if (authLoading) return
@@ -365,11 +368,16 @@ function AuthScreen() {
       if (mode === 'register') {
         const result = await signUp(fullName, submittedEmail, password)
         if (!result.session) {
+          setEmail(submittedEmail)
+          setVerificationPending(true)
           setMessage(t('auth.verifyEmail'))
           notify('success', t('toast.accountCreated'))
+        } else {
+          setVerificationPending(false)
         }
       } else {
         await signIn(submittedEmail, password)
+        setVerificationPending(false)
         notify('success', t('toast.signedIn'))
       }
     } catch (error) {
@@ -427,7 +435,7 @@ function AuthScreen() {
           {mode === 'login' && <button className="auth-inline-link" type="button" onClick={() => { setMode('forgot'); setMessage(''); setFormError('') }}>{t('auth.forgotLink')}</button>}
           {(formError || authError) && <p className="form-message form-error" role="alert">{formError || authError}</p>}
           {message && <p className="form-message form-success" role="status">{message}</p>}
-          {canResendVerification && mode === 'login' && <button className="auth-inline-link" type="button" onClick={resendVerificationEmail} disabled={busy}>{busy ? t('auth.pleaseWait') : t('auth.resendVerification')}</button>}
+          {canResendVerification && (mode === 'login' || mode === 'register') && <button className="auth-inline-link" type="button" onClick={resendVerificationEmail} disabled={busy}>{busy ? t('auth.pleaseWait') : t('auth.resendVerification')}</button>}
           <button className="primary-button auth-submit" type="submit" disabled={busy}>
             {busy && <span className="inline-spinner" aria-hidden="true" />}
             {busy ? t('auth.pleaseWait') : mode === 'register' ? t('auth.create') : mode === 'forgot' ? t('auth.sendReset') : mode === 'reset' ? t('common.updatePassword') : t('auth.signIn')}

@@ -11,6 +11,8 @@ VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_<key>
 ```
 
+For Vercel, add these variables under **Project Settings → Environment Variables** and redeploy. The Vite config also accepts the equivalent `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` names for deployments that already use them. Both the project URL and publishable key are required.
+
 Do not use a Supabase secret or service-role key in the browser. `.env.local` is ignored by Git. Restart Vite after changing environment variables.
 
 Run the app and checks:
